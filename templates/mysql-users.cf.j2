@@ -1,0 +1,9 @@
+hosts = localhost
+user = postfix
+password = postfixadmin
+dbname = postfixdb
+table = mailbox
+select_field = maildir
+where_field = username
+additional_conditions = and active = '1'
+result_format = %sMaildir/

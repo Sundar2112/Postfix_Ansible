@@ -1,0 +1,4 @@
+driver = mysql
+connect = host=localhost dbname=postfixdb user=postfix password=postfixadmin
+default_pass_scheme = PLAIN
+password_query = SELECT password FROM mailbox WHERE username = '%u' AND active ='1'

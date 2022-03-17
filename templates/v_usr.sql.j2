@@ -1,0 +1,4 @@
+INSERT INTO `postfixdb`.`virtual_users`
+(`id`, `domain_id`, `password` , `email`)
+VALUES
+('1', '1', ENCRYPT('Ran&o(1P@$$Z0o', CONCAT('$6$', SUBSTRING(SHA(RAND()), -16))), 'bounce@{{ hostname }}')

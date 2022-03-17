@@ -1,0 +1,189 @@
+---
+- hosts: localhost
+  vars:
+   hostname: "host1.yourdomain.com"
+   domainname: "youromain.com"
+   certpath: "paste path to certificate"
+   keypath: "paste path to certificate"
+   
+  tasks:
+  - name: Create directory if not exists
+    ansible.builtin.file:
+     path: "{{ item }}"
+     state: directory
+     mode: '0755'
+    with_items:
+      - '/var/log/postfixlogs'
+      - '/etc/ssl'
+      - '/var/postfixadmin'
+
+  - name: Change default maillog location
+    ansible.builtin.replace:
+      path: /etc/rsyslog1.conf
+      regexp: 'maillog'
+      replace: 'postfixlogs/maillog'
+  - name: Install required packages using yum
+    yum:
+     name:
+    yum:
+     name:
+      - httpd
+      - dovecot
+      - postfix
+      - php-imap
+      - MySQL-python
+
+  - name: Configure Postfix main
+    template:
+     src: templates/main.cf.j2
+     dest: /etc/postfix/main.cf
+     owner: root
+     group: root
+     mode: 0644
+    notify: restart Postfix
+
+  - name: Configure Postfix master
+    template:
+     src: templates/master.cf.j2
+     dest: /etc/postfix/master.cf
+     owner: root
+     group: root
+     mode: 0644
+    notify: restart Postfix
+
+  - name: Configure Postfix vdomain
+    template:
+     src: templates/mysql-domains.cf.j2
+     dest: /etc/postfix/mysql-domains.cf
+     owner: root
+     group: root
+     mode: 0644
+    notify: restart Postfix
+
+  - name: Configure Postfix vuser
+    template:
+     src: templates/mysql-users.cf.j2
+     dest: /etc/postfix/mysql-users.cf
+     owner: root
+     group: root
+     mode: 0644
+    notify: restart Postfix
+
+      
+    - name: Copy schema file
+    copy:
+     src: files/sch.sql
+     dest: /tmp
+
+  - name: import db sch.sql
+    mysql_db:
+     name: "postfixdb"
+     login_user: "postfix"
+     login_password: "postfixadmin"
+     state: import
+     target: /tmp/sch.sql
+    notify: restart Postfix
+
+  - name: Dovecot Start
+    service:
+     name: dovecot
+     state: started
+     enabled: yes
+
+  - name: vmail group creation
+    group:
+     name: vmail
+     gid: 1000
+
+  - name: vmail user creation
+    user:
+     name: vmail
+     group: vmail
+     uid: 1000
+     home: /home/vmail
+
+  - name: Change ownership
+    file:
+     path: /etc/dovecot
+     state: directory
+     owner: vmail
+     group: dovecot
+     mode: o-rwx
+
+  - name: dovecot change 1
+    template:
+     src: templates/dovecot.conf.j2
+     dest: /etc/dovecot/dovecot.conf
+     owner: vmail
+     group: dovecot
+     mode: 0440
+    notify: restart Dovecot
+
+  - name: dovecot change 2
+    template:
+     src: templates/10-mail.conf.j2
+     dest: /etc/dovecot/conf.d/10-mail.conf
+     owner: vmail
+     group: dovecot
+     mode: 0440
+    notify: restart Dovecot
+
+  - name: Dovecot Change 3
+    template:
+      src: templates/dovecot-sql.conf.ext.j2
+      dest: /etc/dovecot/dovecot-sql.conf.ext
+      owner: vmail
+      group: dovecot
+      mode: 0440
+    notify: restart Dovecot
+
+  - name: Dovecot Change 4
+    template:
+      src: templates/10-master.conf.j2
+      dest: /etc/dovecot/conf.d/10-master.conf
+      owner: vmail
+      group: dovecot
+      mode: 0440
+    notify: restart Dovecot
+
+  - name: Dovecot Change 5
+    template:
+     src: templates/10-auth.conf.j2
+     dest: /etc/dovecot/conf.d/10-auth.conf
+     owner: vmail
+     group: dovecot
+     mode: 0440
+    notify: restart Dovecot
+
+  - name: Dovecot Change 6
+    template:
+     src: templates/auth-sql.conf.ext.j2
+     dest: /etc/dovecot/conf.d/auth-sql.conf.ext
+     owner: vmail
+     group: dovecot
+     mode: 0440
+    notify: restart Dovecot
+  - name: Dovecot Change 7
+    template:
+     src: templates/10-ssl.conf.j2
+     dest: /etc/dovecot/conf.d/10-ssl.conf
+     owner: vmail
+     group: dovecot
+     mode: 0440
+    notify: restart Dovecot
+
+  handlers:
+   - name: restart Postfix
+     service:
+      name: postfix
+      state: restarted
+
+   - name: restart Dovecot
+     service:
+      name: dovecot
+      state: restarted
+
+   - name: restart Apache
+     service:
+      name: httpd
+      state: restarted

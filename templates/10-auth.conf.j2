@@ -1,0 +1,13 @@
+auth_username_format = %Lu
+
+        passdb {
+                driver =sql
+                args = /etc/dovecot/dovecot-mysql.conf
+        }
+
+        userdb {
+                driver = static
+                args = uid=1000 gid=1000 home=/home/vmail/%d/%n
+        }
+
+auth_mechanisms = plain login
